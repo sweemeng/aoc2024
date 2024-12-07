@@ -1,9 +1,12 @@
 from time import sleep
 
+from IPython.lib.deepreload import original_import
 from asciimatics.screen import ManagedScreen
 
 HEADING = [(-1,0), (0,1), (1,0), (0,-1)]
 HEADING_SYMBOL = ["^", ">", "v", "<"]
+OUT_OF_BOUND = 1
+GOES_IN_CIRCLE = 2
 
 
 def parse(filename):
@@ -59,24 +62,42 @@ def print_map_string(maps, guard, guard_heading, size=10):
     return result
 
 
-def solution(file_name, size=10):
+def solution(file_name, barrier=None, size=10):
     maps, guard = parse(file_name)
     heading = HEADING[0]
     tracks = set()
+    last_count = 0
     while True:
-        if is_barrier(guard, heading, maps):
+        tracks.add(guard)
+        if is_barrier(guard, heading, maps, sim_barrier=barrier):
             heading = turn(heading)
 
         guard = move(guard, heading)
 
         if out_of_map(guard, size=size):
+            status = OUT_OF_BOUND
+            print("Out of bound")
             break
-        tracks.add(guard)
         maps[guard] = "X"
-    print(len(tracks))
+        last_count = len(tracks)
+    return tracks, status
+
+
+def solution_2(file_name, tracks, size=10):
+    track_list = list(tracks)
+    count = 0
+    while track_list:
+        barrier = track_list.pop(0)
+        tracks, sim_status = solution(file_name, barrier=barrier, size=size)
+        if sim_status == GOES_IN_CIRCLE:
+            count += 1
+        else:
+            continue
+    print(count)
 
 
 def solution_animate(file_name, size=10):
+    # Do not use for actual solution, it will run out of buffer
     maps, guard = parse(file_name)
     heading = HEADING[0]
     map_str = print_map_string(maps, guard, heading, size=size)
@@ -102,10 +123,8 @@ def solution_animate(file_name, size=10):
             map_str = print_map_string(maps, guard, heading, size=size)
 
             screen.refresh()
-            sleep(0.1)
+            sleep(0.01)
             screen.clear()
-    print(len(tracks))
-
 
 def move(pos, heading):
     return pos[0] + heading[0], pos[1] + heading[1]
@@ -116,10 +135,14 @@ def turn(current_heading):
     return HEADING[(i + 1) % 4]
 
 
-def is_barrier(guard, heading, maps):
+def is_barrier(guard, heading, maps, sim_barrier=None):
     next_pos = move(guard, heading)
+    if sim_barrier:
+        if sim_barrier == next_pos:
+            return True
     if maps.get(next_pos, ".") == "#":
         return True
+
     return False
 
 
@@ -129,6 +152,8 @@ def out_of_map(pos, size):
 
 if __name__ == "__main__":
     #solution_animate("day_06/test_data.txt")
-    solution("day_06/test_data.txt", size=10)
-    solution_animate("day_06/actual_data.txt", size=130)
-    # 4818 too low
+    test_tracks, status = solution("day_06/test_data.txt", size=10)
+    actual_tracks, actual_status = solution("day_06/actual_data.txt", size=130)
+    solution_2("day_06/test_data.txt", test_tracks, size=10)
+    #solution_2("day_06/actual_data.txt", actual_tracks, size=130)
+    # 1816 too high
