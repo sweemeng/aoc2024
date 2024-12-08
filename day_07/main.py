@@ -44,7 +44,7 @@ def machine(registers):
         elif ops == MUL:
             totals *= value
         elif ops == CONCAT:
-            totals = totals * 10 + value
+            totals  = int(str(totals) + str(value))
     return totals
 
 
@@ -61,15 +61,18 @@ def solution(filename):
     concat_total = 0
     for test_values, operations in parse(filename):
         result = concat_runner(operations)
+        solved = False
         for r in result:
             if r == test_values:
-                if test_values not in concat_correct:
-                    concat_total += test_values
-                concat_correct.add(test_values)
+                solved = True
+                break
+        if solved:
+            concat_total += test_values
     print(concat_correct)
     #print(sum(list(concat_correct)))
     print(concat_total)
-    # 9440677114706 too low
+    # 146111650209825 too low
+    # actual answer 146111650210682
 
 
 
